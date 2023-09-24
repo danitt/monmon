@@ -36,7 +36,7 @@ fn main() {
         Some(Commands::Uninstall) => {
             uninstall::run().unwrap();
         }
-        None => run(),
+        None => move_windows_to_primary_display(),
     }
 }
 
@@ -56,22 +56,19 @@ fn watch() -> notify::Result<()> {
     println!("Watching for monitor configuration changes...");
     for res in rx {
         match res {
-            Ok(_) => run(),
+            Ok(_) => {
+                if !is_blacklisted_display_connected() {
+                    println!("No blacklisted display found.");
+                }
+
+                println!("Moving windows to primary display");
+                move_windows_to_primary_display();
+            }
             Err(e) => println!("Watch error: {:?}", e),
         }
     }
 
     Ok(())
-}
-
-fn run() {
-    if !is_blacklisted_display_connected() {
-        println!("No blacklisted display found.");
-        return;
-    }
-
-    println!("Moving windows to primary display");
-    move_windows_to_primary_display();
 }
 
 fn is_blacklisted_display_connected() -> bool {
