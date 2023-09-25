@@ -1,3 +1,4 @@
+use super::env;
 use std::io::Write;
 use std::process::Command;
 use tempfile::NamedTempFile;
@@ -5,6 +6,13 @@ use tempfile::NamedTempFile;
 static SERVICE_NAME: &str = "com.danitt.monmon";
 
 pub fn run(path_to_binary: &str) -> std::io::Result<()> {
+    let blacklisted_displays_str = env::get_blacklisted_displays().join(",");
+    let output_log = format!("{}/Library/logs/{}.log", get_home_dir(), get_plist_name());
+    let error_log = format!(
+        "{}/Library/logs/{}.error.log",
+        get_home_dir(),
+        get_plist_name()
+    );
     let plist_content = format!(
         r#"<?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -22,16 +30,18 @@ pub fn run(path_to_binary: &str) -> std::io::Result<()> {
               <key>KeepAlive</key>
               <true/>
               <key>StandardOutPath</key>
-              <string>~/Library/logs/{}.log</string>
+              <string>{}</string>
               <key>StandardErrorPath</key>
-              <string>~/Library/logs/{}.error.log</string>
+              <string>{}</string>
+              <key>EnvironmentVariables</key>
+              <dict>
+                  <key>BLACKLIST_DISPLAYS</key>
+                  <string>{}</string>
+              </dict>
           </dict>
           </plist>
       "#,
-        SERVICE_NAME,
-        path_to_binary,
-        get_plist_name(),
-        get_plist_name()
+        SERVICE_NAME, path_to_binary, output_log, error_log, blacklisted_displays_str
     );
 
     // Write plist to file
@@ -55,11 +65,18 @@ pub fn run(path_to_binary: &str) -> std::io::Result<()> {
     Ok(())
 }
 
+fn get_home_dir() -> String {
+    std::env::var("HOME").expect("Home directory not found")
+}
+
 fn get_plist_name() -> String {
     format!("{}.plist", SERVICE_NAME)
 }
 
 pub fn get_plist_path() -> String {
-    let home_dir = std::env::var("HOME").expect("Home directory not found");
-    format!("{}/Library/LaunchAgents/{}", home_dir, get_plist_name())
+    format!(
+        "{}/Library/LaunchAgents/{}",
+        get_home_dir(),
+        get_plist_name()
+    )
 }

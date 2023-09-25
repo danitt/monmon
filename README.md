@@ -19,7 +19,7 @@ You will then be able to run commands from your terminal from any directory, e.g
 ## Running as Background Service
 1. First make sure you have [installed](#installation) the `monmon` binary.
 2. Determine the global installation path with `which monmon`
-3. Run `monmon install [path-to-binary]`
+3. Run `BLACKLIST_DISPLAYS="[comma-separated-displays]" monmon install [path-to-binary]`
 _Note: the background service can be uninstalled with `monmon uninstall`_
 
 

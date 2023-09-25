@@ -1,10 +1,9 @@
 extern crate dotenv;
 use clap::{Parser, Subcommand};
-use dotenv::dotenv;
+mod env;
 mod install;
 mod uninstall;
 use notify::{Config, RecommendedWatcher, RecursiveMode, Watcher};
-use std::env;
 use std::path::Path;
 use std::process::{Command, Stdio};
 use std::str;
@@ -72,7 +71,7 @@ fn watch() -> notify::Result<()> {
 }
 
 fn is_blacklisted_display_connected() -> bool {
-    let blacklist_displays = get_blacklisted_displays();
+    let blacklist_displays = env::get_blacklisted_displays();
 
     let mut is_blacklisted_display_connected = false;
     get_connected_displays().iter().for_each(|display| {
@@ -82,16 +81,6 @@ fn is_blacklisted_display_connected() -> bool {
     });
 
     is_blacklisted_display_connected
-}
-
-fn get_blacklisted_displays() -> Vec<String> {
-    dotenv().ok();
-    let blacklist_displays_str =
-        env::var("BLACKLIST_DISPLAYS").expect("BLACKLIST_DISPLAYS must be set");
-    blacklist_displays_str
-        .split(",")
-        .map(|s| s.to_string())
-        .collect()
 }
 
 fn move_windows_to_primary_display() {
