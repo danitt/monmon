@@ -1,4 +1,5 @@
 use super::env;
+use std::fs::create_dir_all;
 use std::io::Write;
 use std::process::Command;
 use tempfile::NamedTempFile;
@@ -44,12 +45,15 @@ pub fn run(path_to_binary: &str) -> std::io::Result<()> {
         SERVICE_NAME, path_to_binary, output_log, error_log, blacklisted_displays_str
     );
 
+    // Ensure the LaunchAgents directory exists
+    create_dir_all(&get_plist_dir()).expect("Failed to create LaunchAgents directory");
+
     // Write plist to file
     let mut file = NamedTempFile::new()?;
     file.write_all(plist_content.as_bytes())?;
     let temp_file_path = file.path().to_str().unwrap();
 
-    // Move plist file to the correct location
+    // Move plist file to launch agents directory
     Command::new("mv")
         .args(&[temp_file_path, &get_plist_path()])
         .output()
@@ -69,14 +73,14 @@ fn get_home_dir() -> String {
     std::env::var("HOME").expect("Home directory not found")
 }
 
+fn get_plist_dir() -> String {
+    format!("{}/Library/LaunchAgents", get_home_dir())
+}
+
 fn get_plist_name() -> String {
     format!("{}.plist", SERVICE_NAME)
 }
 
 pub fn get_plist_path() -> String {
-    format!(
-        "{}/Library/LaunchAgents/{}",
-        get_home_dir(),
-        get_plist_name()
-    )
+    format!("{}/{}", get_plist_dir(), get_plist_name())
 }
