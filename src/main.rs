@@ -58,6 +58,7 @@ fn watch() -> notify::Result<()> {
             Ok(_) => {
                 if !is_blacklisted_display_connected() {
                     println!("No blacklisted display found.");
+                    () // No blacklisted display found, do nothing
                 }
 
                 println!("Moving windows to primary display");
