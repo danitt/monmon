@@ -11,6 +11,9 @@ use std::time::Duration;
 
 #[derive(Parser, Debug)]
 struct Cli {
+    #[arg(global = true, short = 'b', long)]
+    blacklist: Option<String>,
+
     #[command(subcommand)]
     command: Option<Commands>,
 }
@@ -18,19 +21,30 @@ struct Cli {
 #[derive(Subcommand, Debug)]
 enum Commands {
     Watch,
-    Install { path_to_binary: String },
+    Install,
     Uninstall,
 }
 
 fn main() {
     let args = Cli::parse();
 
+    // Set BLACKLIST_DISPLAYS environment variable if provided
+    if args.blacklist.is_some() {
+        let blacklist: Vec<String> = args
+            .blacklist
+            .unwrap()
+            .split(",")
+            .map(|s| s.to_string())
+            .collect();
+        env::set_blacklisted_displays(blacklist);
+    }
+
     match args.command {
         Some(Commands::Watch) => {
             watch().unwrap();
         }
-        Some(Commands::Install { path_to_binary }) => {
-            install::run(&path_to_binary).unwrap();
+        Some(Commands::Install) => {
+            install::run().unwrap();
         }
         Some(Commands::Uninstall) => {
             uninstall::run().unwrap();
@@ -59,10 +73,10 @@ fn watch() -> notify::Result<()> {
                 if !is_blacklisted_display_connected() {
                     println!("No blacklisted display found.");
                     () // No blacklisted display found, do nothing
+                } else {
+                    println!("Blacklisted monitor detected, moving windows to primary display.");
+                    move_windows_to_primary_display();
                 }
-
-                println!("Moving windows to primary display");
-                move_windows_to_primary_display();
             }
             Err(e) => println!("Watch error: {:?}", e),
         }
@@ -76,8 +90,12 @@ fn is_blacklisted_display_connected() -> bool {
 
     let mut is_blacklisted_display_connected = false;
     get_connected_displays().iter().for_each(|display| {
-        if blacklist_displays.contains(display) {
-            is_blacklisted_display_connected = true
+        let display_lower = display.to_lowercase();
+        if blacklist_displays
+            .iter()
+            .any(|d| d.to_lowercase() == display_lower)
+        {
+            is_blacklisted_display_connected = true;
         }
     });
 

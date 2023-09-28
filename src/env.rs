@@ -10,3 +10,12 @@ pub fn get_blacklisted_displays() -> Vec<String> {
         .map(|s| s.to_string())
         .collect()
 }
+
+/*
+Sets the BLACKLIST_DISPLAYS environment variable,
+overwriting if it already exists.
+ */
+pub fn set_blacklisted_displays(blacklist: Vec<String>) -> () {
+    let blacklist_str = blacklist.join(",");
+    env::set_var("BLACKLIST_DISPLAYS", blacklist_str);
+}

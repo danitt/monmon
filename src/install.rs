@@ -2,11 +2,12 @@ use super::env;
 use std::fs::create_dir_all;
 use std::io::Write;
 use std::process::Command;
+use std::str;
 use tempfile::NamedTempFile;
 
 static SERVICE_NAME: &str = "com.danitt.monmon";
 
-pub fn run(path_to_binary: &str) -> std::io::Result<()> {
+pub fn run() -> std::io::Result<()> {
     let blacklisted_displays_str = env::get_blacklisted_displays().join(",");
     let output_log = format!("{}/Library/logs/{}.log", get_home_dir(), get_plist_name());
     let error_log = format!(
@@ -42,7 +43,11 @@ pub fn run(path_to_binary: &str) -> std::io::Result<()> {
           </dict>
           </plist>
       "#,
-        SERVICE_NAME, path_to_binary, output_log, error_log, blacklisted_displays_str
+        SERVICE_NAME,
+        get_path_to_binary(),
+        output_log,
+        error_log,
+        blacklisted_displays_str
     );
 
     // Ensure the LaunchAgents directory exists
@@ -67,6 +72,18 @@ pub fn run(path_to_binary: &str) -> std::io::Result<()> {
 
     println!("Service has been installed and started.");
     Ok(())
+}
+
+fn get_path_to_binary() -> String {
+    let output = Command::new("which")
+        .arg("monmon")
+        .output()
+        .expect("Failed to execute command");
+
+    str::from_utf8(&output.stdout)
+        .expect("Could not convert to UTF-8")
+        .trim() // Remove trailing newline
+        .to_string()
 }
 
 fn get_home_dir() -> String {

@@ -1,0 +1,46 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+
+      - name: Install Dependencies
+        run: |
+          rustup target add aarch64-apple-darwin
+          rustup target add x86_64-apple-darwin
+
+      - name: Build for MacOS ARM
+        run: cargo build --release --target=aarch64-apple-darwin
+
+      - name: Build for MacOS x86
+        run: cargo build --release --target=x86_64-apple-darwin
+
+      - name: Upload Binary - ARM
+        uses: actions/upload-release-asset@v1
+        with:
+          asset_content_type: application/octet-stream
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: ./target/aarch64-apple-darwin/release/monmon
+          asset_name: monmon
+
+      - name: Upload Binary - x86
+        uses: actions/upload-release-asset@v1
+        with:
+          asset_content_type: application/octet-stream
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: ./target/x86_64-apple-darwin/release/monmon
+          asset_name: monmon-x86
